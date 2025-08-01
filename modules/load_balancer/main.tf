@@ -8,11 +8,11 @@
 
 resource "google_compute_managed_ssl_certificate" "defectdojo_cert" {
   name = "${var.service_name}-ssl-cert"
-  
+
   managed {
     domains = [var.domain_name]
   }
-  
+
   lifecycle {
     create_before_destroy = true
   }
@@ -23,28 +23,27 @@ resource "google_compute_managed_ssl_certificate" "defectdojo_cert" {
 # =============================================================================
 
 resource "google_compute_backend_service" "defectdojo_backend" {
-  name                    = "${var.service_name}-backend"
-  description             = "Backend service for DefectDojo"
-  protocol                = "HTTP"
-  port_name               = "http"
-  timeout_sec             = 30
-  enable_cdn              = false
-  load_balancing_scheme   = "EXTERNAL_MANAGED"
-  
+  name                  = "${var.service_name}-backend"
+  description           = "Backend service for DefectDojo"
+  protocol              = "HTTP"
+  port_name             = "http"
+  timeout_sec           = 30
+  enable_cdn            = false
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+
   # Cloud Armor security policy
   security_policy = "projects/${var.project_id}/global/securityPolicies/${var.cloud_armor_policy_name}"
-  
+
   backend {
     group = google_compute_region_network_endpoint_group.defectdojo_neg.id
   }
-  
+
   log_config {
     enable      = true
     sample_rate = 1.0
   }
-  
-  # Health check
-  health_checks = [google_compute_health_check.defectdojo_health_check.id]
+
+  # Note: Health checks are not compatible with serverless backends
 }
 
 # =============================================================================
@@ -55,7 +54,7 @@ resource "google_compute_region_network_endpoint_group" "defectdojo_neg" {
   name                  = "${var.service_name}-neg"
   network_endpoint_type = "SERVERLESS"
   region                = local.region
-  
+
   cloud_run {
     service = local.cloud_run_service_name
   }
@@ -69,7 +68,7 @@ resource "google_compute_health_check" "defectdojo_health_check" {
   name               = "${var.service_name}-health-check"
   check_interval_sec = 30
   timeout_sec        = 10
-  
+
   http_health_check {
     port         = 8080
     request_path = "/login"
@@ -84,13 +83,13 @@ resource "google_compute_url_map" "defectdojo_url_map" {
   name            = "${var.service_name}-url-map"
   description     = "URL map for DefectDojo"
   default_service = google_compute_backend_service.defectdojo_backend.id
-  
+
   # Redirect HTTP to HTTPS
   host_rule {
     hosts        = [var.domain_name]
     path_matcher = "allpaths"
   }
-  
+
   path_matcher {
     name            = "allpaths"
     default_service = google_compute_backend_service.defectdojo_backend.id
@@ -105,7 +104,7 @@ resource "google_compute_target_https_proxy" "defectdojo_https_proxy" {
   name             = "${var.service_name}-https-proxy"
   url_map          = google_compute_url_map.defectdojo_url_map.id
   ssl_certificates = [google_compute_managed_ssl_certificate.defectdojo_cert.id]
-  
+
   ssl_policy = google_compute_ssl_policy.defectdojo_ssl_policy.id
 }
 
@@ -115,7 +114,7 @@ resource "google_compute_target_https_proxy" "defectdojo_https_proxy" {
 
 resource "google_compute_url_map" "defectdojo_http_redirect" {
   name = "${var.service_name}-http-redirect"
-  
+
   default_url_redirect {
     https_redirect         = true
     redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
@@ -165,6 +164,6 @@ resource "google_compute_global_forwarding_rule" "defectdojo_http" {
 # =============================================================================
 
 locals {
-  region = regex("^([^-]+-[^-]+)", var.cloud_run_service_url)[0]
-  cloud_run_service_name = regex("/services/([^/?]+)", var.cloud_run_service_url)[0]
+  region                 = "us-central1"  # Extract from Cloud Run URL or set explicitly
+  cloud_run_service_name = regex("https://([^-]+)", var.cloud_run_service_url)[0]
 }

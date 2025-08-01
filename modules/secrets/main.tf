@@ -8,9 +8,9 @@
 
 resource "google_secret_manager_secret" "neon_database_url" {
   secret_id = "defectdojo-neon-database-url"
-  
+
   labels = var.labels
-  
+
   replication {
     auto {}
   }
@@ -27,9 +27,9 @@ resource "google_secret_manager_secret_version" "neon_database_url" {
 
 resource "google_secret_manager_secret" "secret_key" {
   secret_id = "defectdojo-secret-key"
-  
+
   labels = var.labels
-  
+
   replication {
     auto {}
   }
@@ -46,9 +46,9 @@ resource "google_secret_manager_secret_version" "secret_key" {
 
 resource "google_secret_manager_secret" "admin_password" {
   secret_id = "defectdojo-admin-password"
-  
+
   labels = var.labels
-  
+
   replication {
     auto {}
   }

@@ -10,7 +10,7 @@ resource "google_compute_security_policy" "defectdojo_policy" {
   name        = "defectdojo-security-policy"
   description = "Cloud Armor policy for DefectDojo - restricts access to specific IP"
   project     = var.project_id
-  
+
   # Default rule - deny all traffic
   rule {
     action   = "deny(403)"
@@ -23,7 +23,7 @@ resource "google_compute_security_policy" "defectdojo_policy" {
     }
     description = "Default deny rule"
   }
-  
+
   # Allow traffic from specified source IP
   rule {
     action   = "allow"
@@ -36,9 +36,9 @@ resource "google_compute_security_policy" "defectdojo_policy" {
     }
     description = "Allow access from specified source IP"
   }
-  
+
   # Additional security rules
-  
+
   # Rate limiting rule
   rule {
     action   = "rate_based_ban"
@@ -61,7 +61,7 @@ resource "google_compute_security_policy" "defectdojo_policy" {
     }
     description = "Rate limiting - max 100 requests per minute per IP"
   }
-  
+
   # Block common attack patterns
   rule {
     action   = "deny(403)"
@@ -73,7 +73,7 @@ resource "google_compute_security_policy" "defectdojo_policy" {
     }
     description = "Block XSS attacks"
   }
-  
+
   rule {
     action   = "deny(403)"
     priority = "3001"
@@ -84,7 +84,7 @@ resource "google_compute_security_policy" "defectdojo_policy" {
     }
     description = "Block SQL injection attacks"
   }
-  
+
   rule {
     action   = "deny(403)"
     priority = "3002"
@@ -95,7 +95,7 @@ resource "google_compute_security_policy" "defectdojo_policy" {
     }
     description = "Block local file inclusion attacks"
   }
-  
+
   rule {
     action   = "deny(403)"
     priority = "3003"
@@ -106,14 +106,14 @@ resource "google_compute_security_policy" "defectdojo_policy" {
     }
     description = "Block remote file inclusion attacks"
   }
-  
+
   # Block suspicious user agents
   rule {
     action   = "deny(403)"
     priority = "4000"
     match {
       expr {
-        expression = "has(request.headers['user-agent']) && request.headers['user-agent'].matches('(?i)(curl|wget|python|scanner|bot)')"
+        expression = "has(request.headers['user-agent']) && request.headers['user-agent'].matches('curl|wget|python|scanner|bot')"
       }
     }
     description = "Block suspicious user agents"

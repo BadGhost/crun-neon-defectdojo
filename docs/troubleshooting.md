@@ -2,6 +2,60 @@
 
 This guide helps you diagnose and resolve common issues with your DefectDojo deployment.
 
+## Critical: API Enablement Permission Issues
+
+### Problem: Cannot Enable Cloud Run API
+If you're getting permission denied errors when trying to enable services like `cloudrun.googleapis.com`:
+
+```
+ERROR: (gcloud.services.enable) PERMISSION_DENIED: Not found or permission denied for service(s): cloudrun.googleapis.com
+```
+
+#### Immediate Solutions:
+
+1. **Use the Google Cloud Console** (Recommended):
+   - Go to [Google Cloud Console](https://console.cloud.google.com)
+   - Navigate to "APIs & Services" → "Library"
+   - Search for and enable each service manually:
+     - Cloud Run API
+     - Compute Engine API  
+     - Secret Manager API
+     - Cloud Storage API
+     - Certificate Manager API
+     - Network Services API
+
+2. **Wait for Project Propagation**:
+   ```bash
+   # New projects need 5-10 minutes for full service availability
+   echo "Waiting for project propagation..."
+   sleep 300  # Wait 5 minutes
+   gcloud services enable cloudrun.googleapis.com
+   ```
+
+3. **Fix Quota Project Issues**:
+   ```bash
+   gcloud auth application-default set-quota-project your-defectdojo-project
+   gcloud config set project your-defectdojo-project
+   ```
+
+4. **Alternative: Enable Services via Terraform**:
+   Add this to your main.tf before other resources:
+   ```hcl
+   # Enable required APIs
+   resource "google_project_service" "required_apis" {
+     for_each = toset([
+       "cloudrun.googleapis.com",
+       "compute.googleapis.com", 
+       "secretmanager.googleapis.com",
+       "storage.googleapis.com"
+     ])
+     
+     project = var.project_id
+     service = each.value
+     disable_on_destroy = false
+   }
+   ```
+
 ## Quick Diagnostics
 
 ### Health Check Script
