@@ -1,0 +1,15 @@
+# =============================================================================
+# Terraform Configuration Example
+# =============================================================================
+
+# Copy this file to terraform.tfvars and update the values
+
+# Required variables
+project_id          = "your-gcp-project-id"
+neon_database_url   = "postgresql://username:password@host/database?sslmode=require"
+allowed_source_ip   = "203.0.113.0/32"  # Replace with your actual IP address
+
+# Optional variables (uncomment and modify if needed)
+# region              = "us-central1"
+# environment         = "prod"
+# container_image     = "defectdojo/defectdojo-django:latest"
