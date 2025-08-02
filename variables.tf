@@ -28,7 +28,7 @@ variable "neon_database_url" {
 variable "container_image" {
   description = "The container image for DefectDojo"
   type        = string
-  default     = "defectdojo/defectdojo-django:latest"
+  default     = "us-central1-docker.pkg.dev/your-defectdojo-project/defectdojo-repo/defectdojo-custom:v3"
 }
 
 variable "allowed_source_ip" {

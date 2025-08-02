@@ -1,0 +1,25 @@
+# Use the official DefectDojo image as a base
+FROM defectdojo/defectdojo-django:latest
+
+# Switch to root to install packages
+USER root
+
+# Install the necessary Python package for Google Cloud Storage
+RUN pip install django-storages[google]
+
+# Set the working directory
+WORKDIR /app
+
+# Copy the entrypoint script to run migrations and start the server
+COPY uwsgi-run.sh /app/uwsgi-run.sh
+RUN chmod +x /app/uwsgi-run.sh
+
+# Collect all static files into the '/app/static' directory
+# The '--noinput' flag prevents any interactive prompts
+RUN python manage.py collectstatic --noinput
+
+# List static files to verify they exist
+RUN ls -la /app/static/
+
+# Set the entrypoint to our custom script
+ENTRYPOINT ["/app/uwsgi-run.sh"]

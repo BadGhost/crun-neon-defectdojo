@@ -45,28 +45,9 @@ resource "google_cloud_run_v2_service" "defectdojo" {
         container_port = 8081
       }
 
-      # Custom startup command to ensure migrations run
+      # Use our custom entrypoint script
       command = ["/bin/bash"]
-      args = ["-c", <<-EOF
-        echo "Starting DefectDojo initialization..."
-        python manage.py migrate --noinput
-        echo "Migrations completed."
-        python manage.py loaddata system_settings initial_banner_conf product_type test_type development_environment benchmark_type || echo "Initial data load failed, continuing..."
-        echo "Initial data loaded."
-        python manage.py shell -c "
-from django.contrib.auth import get_user_model
-import os
-User = get_user_model()
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@example.com', os.environ['DD_ADMIN_PASSWORD'])
-    print('Superuser created')
-else:
-    print('Superuser already exists')
-" || echo "Superuser creation failed, continuing..."
-        echo "Starting uWSGI server..."
-        exec uwsgi --http 0.0.0.0:8081 --module dojo.wsgi:application --env DD_INITIALIZE=true
-      EOF
-      ]
+      args = ["/app/uwsgi-run.sh"]
 
       # Environment variables from secrets
       env {
@@ -128,7 +109,7 @@ else:
 
       env {
         name  = "DD_ALLOWED_HOSTS"
-        value = var.domain_name
+        value = "34.8.241.159.sslip.io,defectdojo-sbkdl23jnq-uc.a.run.app,34.8.241.159,127.0.0.1,localhost"
       }
 
       env {
@@ -169,6 +150,21 @@ else:
       env {
         name  = "DD_STATIC_ROOT"
         value = "/app/static"
+      }
+
+      env {
+        name  = "DD_STATIC_URL"
+        value = "/static/"
+      }
+
+      env {
+        name  = "DD_MEDIA_ROOT"
+        value = "/app/media"
+      }
+
+      env {
+        name  = "DD_MEDIA_URL"
+        value = "/media/"
       }
 
       env {
