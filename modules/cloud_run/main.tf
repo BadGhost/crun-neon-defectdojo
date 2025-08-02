@@ -45,6 +45,29 @@ resource "google_cloud_run_v2_service" "defectdojo" {
         container_port = 8081
       }
 
+      # Custom startup command to ensure migrations run
+      command = ["/bin/bash"]
+      args = ["-c", <<-EOF
+        echo "Starting DefectDojo initialization..."
+        python manage.py migrate --noinput
+        echo "Migrations completed."
+        python manage.py loaddata system_settings initial_banner_conf product_type test_type development_environment benchmark_type || echo "Initial data load failed, continuing..."
+        echo "Initial data loaded."
+        python manage.py shell -c "
+from django.contrib.auth import get_user_model
+import os
+User = get_user_model()
+if not User.objects.filter(username='admin').exists():
+    User.objects.create_superuser('admin', 'admin@example.com', os.environ['DD_ADMIN_PASSWORD'])
+    print('Superuser created')
+else:
+    print('Superuser already exists')
+" || echo "Superuser creation failed, continuing..."
+        echo "Starting uWSGI server..."
+        exec uwsgi --http 0.0.0.0:8081 --module dojo.wsgi:application --env DD_INITIALIZE=true
+      EOF
+      ]
+
       # Environment variables from secrets
       env {
         name = "DATABASE_URL"
@@ -185,7 +208,7 @@ resource "google_cloud_run_v2_service" "defectdojo" {
           path = "/"
           port = 8081
         }
-        initial_delay_seconds = 300
+        initial_delay_seconds = 600  # Increased to allow time for migrations
         timeout_seconds       = 10
         period_seconds        = 30
         failure_threshold     = 3
